@@ -1,18 +1,23 @@
+/* Luis Antonio Montoya Morales
+ * Practice 4 - Huffman Code
+ * 7/11/21
+*/
+
 #include "HuffmanCode.h"
 
-std::string readFile(std::string&);
-bool compareFiles(std::string&&, std::string&&);    //Compare 2 files and returns true if both are equal, false otherwise
+std::string readFile(std::string&);                 //Returns file content as string
+bool compareFiles(std::string&&, std::string&&);    //Compare 2 files and returns true if the content of both are equal, false otherwise
 
 int main() {
     //Bidimensional array.
-    //Contains file names for testing, first position is original file name, second compress file name and third decompress file name.
+    //Bidimensional Array Contains file names for testing, first position is original file name, second compress file name and third decompress file name.
     std::array<std::array<std::string, 3>, 4> test_files = {"ADN1.txt", "ADN1_compressed.txt", "ADN1_decompressed.txt",
                                                             "ADN2.txt", "ADN2_compressed.txt", "ADN2_decompressed.txt",
                                                             "ADN3.txt", "ADN3_compressed.txt", "ADN3_decompressed.txt",
                                                             "Texto.txt", "Texto_compressed.txt", "Texto_decompressed.txt"};
     std::string file_content;
     HuffmanCode *compresor;
-    //Do 4 test for Huffman Code compression
+    //Do 4 test Huffman Code compression
     for(auto & test_file : test_files){
         std::cout << "Start compression for: " << test_file[0] << std::endl;
         file_content = readFile(test_file[0]);
@@ -20,6 +25,7 @@ int main() {
         std::cout << "Build time: " << compresor->getBuildTime().count() << std::endl;
         compresor->printList();
         compresor->compressFile(file_content, std::move(test_file[1]));
+        //Releases compresor attributes with the purpose of do a full test to compressed file
         compresor->clear();
         compresor->decompressFile(std::move(test_file[1]), std::move(test_file[2]));
         if(compareFiles(std::move(test_file[0]), std::move(test_file[2])))

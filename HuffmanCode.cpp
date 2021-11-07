@@ -21,93 +21,8 @@ HuffmanCode::HuffmanCode(std::string& raw_input) : mTime_frame(Time_Frame::zero(
     mTime_frame = mFinish - mStart;
 }
 
-void HuffmanCode::printList() {
-    std::cout << "|----------Char count----------|" << std::endl;
-    for(int i = 0; i < mTable_frequency.size(); ++i){
-        std::cout << "[";
-        if(mTable_frequency[i].first == '\n')
-            std::cout << "LF";
-        else
-            std::cout << mTable_frequency[i].first;
-        std::cout << "] : " << mTable_frequency[i].second << " - " << mCode_Table[i].value << "|" << mCode_Table[i].bit_size  << std::endl;
-    }
-    std::cout << "|-------------- ---------------|" << std::endl;
-}
-
-//Non-member methods
-bool HuffmanCode::isSameLetter(char character, CharFrequency &src) {
-    return src.first == character;
-}
-
-bool HuffmanCode::compareAsCharCount(CharFrequency &i, CharFrequency &j) {
-    return i.second < j.second;
-}
-
-void HuffmanCode::makeNodeTable(TableFrequency &frequency_table, NodeList& node_table) {
-    CharNode* node;
-    for(auto& i : frequency_table){
-        node = new CharNode;
-        node->left = nullptr;
-        node->right = nullptr;
-        node->label = i.first;
-        node->sum = i.second;
-        node->letter = i.first;
-        node_table.push_back(node);
-    }
-}
-
-void HuffmanCode::combineNodesAsMinSum(NodeList &table, int i, int j, int k) {
-    auto* combined_node = new CharNode;
-    if((table[i]->sum + table[j]->sum) <= (table[j]->sum + table[k]->sum)){
-        appendNodes(combined_node, table[i], table[j]);
-        eraseFromNodeTable(i, j, table);
-    }
-    else{
-        appendNodes(combined_node, table[j], table[k]);
-        eraseFromNodeTable(j, k, table);
-    }
-    table.push_back(combined_node);
-    std::sort(table.begin(), table.end(), compareAsSumNode);
-}
-
-void HuffmanCode::appendNodes(CharNode* parent, CharNode* left_child, CharNode* right_child) {
-    parent->left = left_child;
-    parent->right = right_child;
-    parent->sum = left_child->sum + right_child->sum;
-    parent->label = left_child->label + right_child->label;
-    std::cout << left_child->label << " with " << right_child->label << " : " << parent->sum << std::endl;
-}
-
-void HuffmanCode::eraseFromNodeTable(int i, int j, NodeList& table) {
-    table.erase(table.begin() + i);
-    table.erase(table.begin() + j - 1);
-}
-
-bool HuffmanCode::compareAsSumNode(CharNode *i, CharNode *j) {
-    return i->sum < j->sum;
-}
-
-size_t HuffmanCode::findInFrequencyTable(char letter) {
-    for(int i = 0; i < mTable_frequency.size(); ++i)
-        if(mTable_frequency[i].first == letter)
-            return i;
-    return std::numeric_limits<size_t>::max();
-}
-
-void HuffmanCode::traceBinaryCode(long code, int size, CharNode *node, TableFrequency& table, BinaryMapping& list_code) {
-    size_t pos;
-    if(node != nullptr){
-         pos = findInFrequencyTable(node->letter);
-        if(pos != std::numeric_limits<size_t>::max()){
-            list_code[pos].bit_size = size;
-            list_code[pos].value = code;
-            list_code[pos].bit_set = numberToExtendedBinaryString(list_code[pos].value, list_code[pos].bit_size);
-        }
-        else{
-            traceBinaryCode((code << 1) | 0b00, size + 1, node->left, table, list_code);
-            traceBinaryCode((code << 1) | 0b01, size + 1, node->right, table, list_code);
-        }
-    }
+Time_Frame &HuffmanCode::getBuildTime() {
+    return mTime_frame;
 }
 
 void HuffmanCode::compressFile(std::string &file_content, std::string &&file_name) {
@@ -117,9 +32,10 @@ void HuffmanCode::compressFile(std::string &file_content, std::string &&file_nam
     unsigned char character;
     int freq;
     size_t max_size = file_content.size();
+    //Saves max size of file
     file.write(reinterpret_cast<const char*>(&max_size), sizeof(max_size));
     if(file.is_open()){
-        //Saves in file frequency table
+        //Saves frequency table
         file.write(reinterpret_cast<const char *>(&pos), sizeof(size_t));
         for(auto& i : mTable_frequency){
             character = i.first;
@@ -131,16 +47,17 @@ void HuffmanCode::compressFile(std::string &file_content, std::string &&file_nam
         for(auto i : file_content){
             pos = findInFrequencyTable(i);
             if(pos != std::numeric_limits<size_t>::max()){
-                bit_set_to_write.append(mCode_Table[pos].bit_set);
+                bit_set_to_write.append(mCode_list[pos].bit_set);
             }
         }
-        //Cuts string in 8 bits chunks and writes in file
+        //Cuts string in 8 bits chunks and writes in file as character
         int repeat_times = static_cast<int>(bit_set_to_write.size() / 8);
         for(int i = 0; i < repeat_times; ++i){
             character = bitSetToChar(bit_set_to_write.substr(0,8));
             file.write(reinterpret_cast<const char*>(&character), sizeof(character));
             bit_set_to_write.erase(0, 8);
         }
+        //Completes residual chunk
         if(!bit_set_to_write.empty()){
             generateZeros(bit_set_to_write, 8 - bit_set_to_write.size());
             character = bitSetToChar(std::move(bit_set_to_write));
@@ -151,30 +68,6 @@ void HuffmanCode::compressFile(std::string &file_content, std::string &&file_nam
         std::cerr << "Cannot open file while compress" << std::endl;
     }
     file.close();
-}
-
-void HuffmanCode::generateZeros(std::string& src, size_t size){
-    for(int i = 0; i < size; ++i)
-        src.append("0");
-}
-
-void HuffmanCode::releaseTree(CharNode *node) {
-    if(node->left != nullptr)
-        releaseTree(node->left);
-    if(node->right != nullptr)
-        releaseTree(node->right);
-    delete node;
-}
-
-void HuffmanCode::clear() {
-    releaseTree(mTree_root);
-    mTable_frequency.clear();
-    mCode_Table.clear();
-    mNode_table.clear();
-}
-
-Time_Frame &HuffmanCode::getBuildTime() {
-    return mTime_frame;
 }
 
 void HuffmanCode::decompressFile(std::string &&compressed_file, std::string &&output_file) {
@@ -258,19 +151,140 @@ void HuffmanCode::decompressFile(std::string &&compressed_file, std::string &&ou
         std::cerr << "Cannot open file while compress" << std::endl;
 }
 
+void HuffmanCode::printList() {
+    std::cout << "|----------Char count----------|" << std::endl;
+    for(int i = 0; i < mTable_frequency.size(); ++i){
+        std::cout << "[";
+        if(mTable_frequency[i].first == '\n')
+            std::cout << "LF";
+        else
+            std::cout << mTable_frequency[i].first;
+        std::cout << "] : " << mTable_frequency[i].second << " - " << mCode_list[i].value << "|" << mCode_list[i].bit_size << std::endl;
+    }
+    std::cout << "|-------------- ---------------|" << std::endl;
+}
+
+void HuffmanCode::clear() {
+    releaseTree(mTree_root);
+    mTable_frequency.clear();
+    mCode_list.clear();
+    mNode_list.clear();
+}
+
+size_t HuffmanCode::findInFrequencyTable(char letter) {
+    for(int i = 0; i < mTable_frequency.size(); ++i)
+        if(mTable_frequency[i].first == letter)
+            return i;
+    return std::numeric_limits<size_t>::max();
+}
+
+void HuffmanCode::buildTree(){
+    makeNodeList();
+    while(mNode_list.size() > 2)
+        combineNodesAsMinSum(0, 1);
+    //Combine residual nodes
+    combineNodesAsMinSum(0, 1);
+    mTree_root = mNode_list.front();
+    mCode_list = BinaryMapping(mTable_frequency.size());
+    traceBinaryCode(0b00, 0, mTree_root, mTable_frequency, mCode_list);
+}
+
+void HuffmanCode::makeNodeList() {
+    CharNode* node;
+    for(auto& i : mTable_frequency){
+        node = new CharNode;
+        node->left = nullptr;
+        node->right = nullptr;
+        node->label = i.first;
+        node->sum = i.second;
+        node->letter = i.first;
+        mNode_list.push_back(node);
+    }
+}
+
+void HuffmanCode::combineNodesAsMinSum(int i, int j) {
+    auto* combined_node = new CharNode;
+    appendNodes(combined_node, mNode_list[i], mNode_list[j]);
+    eraseFromNodeList(i, j);
+    mNode_list.push_back(combined_node);
+    std::sort(mNode_list.begin(), mNode_list.end(), compareAsSumNode);
+}
+
+void HuffmanCode::eraseFromNodeList(int i, int j) {
+    mNode_list.erase(mNode_list.begin() + i);
+    mNode_list.erase(mNode_list.begin() + j - 1);
+}
+
+HuffmanCode::~HuffmanCode() {
+    clear();
+}
+
+//Non-member methods
+
+bool HuffmanCode::compareAsCharCount(CharFrequency &i, CharFrequency &j) {
+    return i.second < j.second;
+}
+
+void HuffmanCode::appendNodes(CharNode* parent, CharNode* left_child, CharNode* right_child) {
+    parent->left = left_child;
+    parent->right = right_child;
+    parent->sum = left_child->sum + right_child->sum;
+    parent->label = left_child->label + right_child->label;
+    std::cout << left_child->label << " with " << right_child->label << " : " << parent->sum << std::endl;
+}
+
+bool HuffmanCode::compareAsSumNode(CharNode *i, CharNode *j) {
+    return i->sum < j->sum;
+}
+
+/* Gets binary code compression for leaf nodes, recursively follows:
+ * 1 Get code (long value) and current node
+ * 2 Search node character value in frequency table,
+ *  2.1 If exist node character in table, current node is a leaf node (this is the base case)
+ *      2.1.1 Store string binary representation
+ *  2.2 Otherwise
+ *      2.2.1 Calls the same process appending (moves 1 bit to left before add) 1 to right child
+ *      2.2.2 Calls the same process appending (moves 1 bit to left before add) 0 to left child
+*/
+void HuffmanCode::traceBinaryCode(long code, int size, CharNode *node, TableFrequency& table, BinaryMapping& list_code) {
+    size_t pos;
+    if(node != nullptr){
+        pos = findInFrequencyTable(node->letter);
+        if(pos != std::numeric_limits<size_t>::max()){
+            list_code[pos].bit_size = size;
+            list_code[pos].value = code;
+            list_code[pos].bit_set = numberToExtendedBinaryString(list_code[pos].value, list_code[pos].bit_size);
+        }
+        else{
+            traceBinaryCode((code << 1) | 0b00, size + 1, node->left, table, list_code);
+            traceBinaryCode((code << 1) | 0b01, size + 1, node->right, table, list_code);
+        }
+    }
+}
+
+void HuffmanCode::generateZeros(std::string& src, size_t size){
+    for(int i = 0; i < size; ++i)
+        src.append("0");
+}
+
+void HuffmanCode::releaseTree(CharNode *node) {
+    if(node->left != nullptr)
+        releaseTree(node->left);
+    if(node->right != nullptr)
+        releaseTree(node->right);
+    delete node;
+}
+
+
+
 std::string HuffmanCode::numberToExtendedBinaryString(long number, size_t input_size){
     std::string binary_expression;
-    setBinaryExpressionZeros(binary_expression, input_size);
+    generateZeros(binary_expression, input_size);
     while(number != 0){
         binary_expression[(input_size--) - 1] = static_cast<char>(48 + (number % 2));
         number /= 2;
     }
     return binary_expression;
-}
-
-void HuffmanCode::setBinaryExpressionZeros(std::string& binary, size_t input_size){
-    while(input_size-- > 0)
-        binary += '0';
 }
 
 unsigned char HuffmanCode::bitSetToChar(std::string &&bit_chunk) {
@@ -282,18 +296,4 @@ unsigned char HuffmanCode::bitSetToChar(std::string &&bit_chunk) {
         temp = static_cast<short>(temp * 2);
     }
     return character;
-}
-
-void HuffmanCode::buildTree(){
-    makeNodeTable(mTable_frequency, mNode_table);
-    while(mNode_table.size() > 2)
-        combineNodesAsMinSum(mNode_table, 0, 1, 2);
-    combineNodesAsMinSum(mNode_table, 0, 1, 0);
-    mTree_root = mNode_table.front();
-    mCode_Table = BinaryMapping(mTable_frequency.size());
-    traceBinaryCode(0b00, 0, mTree_root, mTable_frequency, mCode_Table);
-}
-
-HuffmanCode::~HuffmanCode() {
-    clear();
 }

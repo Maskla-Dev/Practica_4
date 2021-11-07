@@ -39,7 +39,6 @@ using TableFrequency = std::vector<CharFrequency>;          //Table of frequency
 using Time_Frame = std::chrono::duration<double>;           //Time lapse
 using Timer = std::chrono::system_clock;                    //Clock structure
 using Checkpoint = std::chrono::system_clock::time_point;   //Stores time checkpoint
-using ListPos = TableFrequency::iterator;                   //Iterator (position in array for table frequency)
 using NodeList = std::vector<CharNode*>;                    //List of char nodes
 using BinaryMapping = std::vector<BitInfo>;                 //Compression codes for characters, positions are equal for table frequency
 
@@ -52,37 +51,32 @@ class HuffmanCode {
         void decompressFile(std::string&&, std::string&&);      //Inits decompression file
         void printList();                                       //Print Table Frequency and binary code for all characters
         void clear();                                           //Release all attributes
-        ~HuffmanCode();
+        ~HuffmanCode();                                         //Destructor of the class
     protected:
-
-        static bool isSameLetter(char, CharFrequency&);
-
-        static bool compareAsCharCount(CharFrequency&, CharFrequency&);
-        static bool compareAsSumNode(CharNode*, CharNode*);
-        static void makeNodeTable(TableFrequency&, NodeList&);
-        static void combineNodesAsMinSum(NodeList &, int, int, int);
-        static void appendNodes(CharNode*, CharNode*, CharNode*);
-        void traceBinaryCode(long, int, CharNode*, TableFrequency&, BinaryMapping&);
-        static void releaseTree(CharNode*);
-        static std::string numberToExtendedBinaryString(long number, size_t input_size);
-        static void setBinaryExpressionZeros(std::string& binary, size_t input_size);
-        static unsigned char bitSetToChar(std::string&& bit_chunk);
-        static void generateZeros(std::string&, size_t);
     private:
         //Member Methods
         size_t findInFrequencyTable(char);
         void buildTree();                                       //Inits binary tree building and binary code for characters
+        void makeNodeList();                                    //Builds node table
+        void combineNodesAsMinSum(int, int);                    //Combine 2 nodes: i and j. Resulting node is pushed to the Node List and the ith and jth are erased from Node List
+        void eraseFromNodeList(int, int);                       //Erase Node from node list
         //Non-member Methods
-        static void eraseFromNodeTable(int, int, NodeList&);    //Erase Node from node list
+        static bool compareAsSumNode(CharNode*, CharNode*);                             //Compares 2 nodes, if ith node is minor than jth, returns true
+        static void generateZeros(std::string&, size_t);                                //Generate a string with n zeros
+        static std::string numberToExtendedBinaryString(long, size_t);                  //Convert long to binary string representation
+        static unsigned char bitSetToChar(std::string&&);                               //Convert an 8 bit set (string representation) to unsigned char
+        static void releaseTree(CharNode*);                                             //Release memory used by a binary tree
+        static bool compareAsCharCount(CharFrequency&, CharFrequency&);                 //Compare 2 char frequency, if ith char frequency is minor than jth, returns true
+        static void appendNodes(CharNode*, CharNode*, CharNode*);                       //Append children nodes to a parent node from binary tree
+        void traceBinaryCode(long, int, CharNode*, TableFrequency&, BinaryMapping&);    //Fills compression code list from binary tree
         //Member Attributes
         TableFrequency mTable_frequency;
-        NodeList mNode_table;
+        NodeList mNode_list;
         Checkpoint mStart, mFinish;
         Time_Frame mTime_frame;
         CharNode * mTree_root;
-        BinaryMapping mCode_Table;
+        BinaryMapping mCode_list;
         std::string original_file_content;
 };
-
 
 #endif //PRACTICA_4_HUFFMANCODE_H
