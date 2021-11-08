@@ -32,9 +32,9 @@ void HuffmanCode::compressFile(std::string &file_content, std::string &&file_nam
     unsigned char character;
     int freq;
     size_t max_size = file_content.size();
-    //Saves max size of file
-    file.write(reinterpret_cast<const char*>(&max_size), sizeof(max_size));
     if(file.is_open()){
+        //Saves max size of file
+        file.write(reinterpret_cast<const char*>(&max_size), sizeof(max_size));
         //Saves frequency table
         file.write(reinterpret_cast<const char *>(&pos), sizeof(size_t));
         for(auto& i : mTable_frequency){

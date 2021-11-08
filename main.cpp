@@ -4,6 +4,7 @@
 */
 
 #include "HuffmanCode.h"
+#include "BitMapCompressor.h"
 
 std::string readFile(std::string&);                 //Returns file content as string
 bool compareFiles(std::string&&, std::string&&);    //Compare 2 files and returns true if the content of both are equal, false otherwise
@@ -35,6 +36,18 @@ int main() {
         delete compresor;
         file_content.clear();
     }
+    //Testing image compression
+    BitMapCompressor bitmap("test_image.bmp", 512, 512);
+    bitmap.compressImage("test_image.cbmp");
+    bitmap.printList();
+    bitmap.clear();
+    bitmap.decompressImage("test_image.cbmp", "decompressed_test_image.bmp");
+    bitmap.printList();
+    if(compareFiles("test_image.bmp", "decompressed_test_image.bmp"))
+        std::cout << "Successful compression and decompression\n" << std::endl;
+    else
+        std::cout << "Compression was not successful\n" << std::endl;
+    bitmap.clear();
     return 0;
 }
 

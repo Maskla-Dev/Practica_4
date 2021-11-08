@@ -52,6 +52,10 @@ class HuffmanCode {
         void printList();                                       //Print Table Frequency and binary code for all characters
         void clear();                                           //Release all attributes
         ~HuffmanCode();                                         //Destructor of the class
+        //Non-member Methods
+        static std::string numberToExtendedBinaryString(long, size_t);                  //Convert long to binary string representation
+        static unsigned char bitSetToChar(std::string&&);                               //Convert an 8 bit set (string representation) to unsigned char
+        static void generateZeros(std::string&, size_t);                                //Generate a string with n zeros
     protected:
     private:
         //Member Methods
@@ -62,9 +66,6 @@ class HuffmanCode {
         void eraseFromNodeList(int, int);                       //Erase Node from node list
         //Non-member Methods
         static bool compareAsSumNode(CharNode*, CharNode*);                             //Compares 2 nodes, if ith node is minor than jth, returns true
-        static void generateZeros(std::string&, size_t);                                //Generate a string with n zeros
-        static std::string numberToExtendedBinaryString(long, size_t);                  //Convert long to binary string representation
-        static unsigned char bitSetToChar(std::string&&);                               //Convert an 8 bit set (string representation) to unsigned char
         static void releaseTree(CharNode*);                                             //Release memory used by a binary tree
         static bool compareAsCharCount(CharFrequency&, CharFrequency&);                 //Compare 2 char frequency, if ith char frequency is minor than jth, returns true
         static void appendNodes(CharNode*, CharNode*, CharNode*);                       //Append children nodes to a parent node from binary tree
